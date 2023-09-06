@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+  <input id="ip" type="text" value="192.168.1.6"><br>
+  <button onclick="connect()">START</button>
+  <button onclick="wsclose()">STOP</button>
+  <div id="log_inner"></div>
+  <br>
+  <!-- <canvas width="64" height="48" style="width:400px" id="cv"></canvas> -->
+  <img id="img">
+
+</body>
+<script>
+  let ws = null;
+  let flag = false;
+
+  function log(text) {
+    console.log(text);
+  }
+
+  function connect() {
+    flag = true;
+    ws = new WebSocket(`ws://${ip.value}:82/`, ['hub']);
+    log('start');
+
+    ws.onopen = function () {
+      log('opened');
+    };
+    ws.onclose = function () {
+      log('close');
+      ws = null;
+      if (flag) {
+        setTimeout(connect, 1000);
+        log('reconnect');
+      }
+    };
+    ws.onmessage = function (e) {
+      document.getElementById('img').src = URL.createObjectURL(e.data);
+    };
+
+  }
+
+  function send(text) {
+    if (ws && ws.readyState == 1) ws.send(text);
+  }
+
+  function wsclose() {
+    flag = false;
+    if (ws) ws.close();
+  }
+
+</script>
+
+</html>
