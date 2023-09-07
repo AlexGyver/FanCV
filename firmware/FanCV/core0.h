@@ -18,6 +18,7 @@ ServoXY xy(&servoX, &servoY);
 FaceFinder face;
 PWM fan(FAN_PWM_PIN, 2);
 
+uint16_t bufpos_x, bufpos_y;
 bool manual = 0;
 bool locked = 0;
 uint8_t sys_state = 0;  // 0 idle, 1 search, 2 locked
@@ -36,7 +37,7 @@ void build() {
     hub.Title(F("Servo"));
 
     hub.WidgetSize(50);
-    if (hub.Slider(&data.s_speed, GH_UINT16, F("speed"), 30, 120)) {
+    if (hub.Slider(&data.s_speed, GH_UINT16, F("speed"), 40, 200)) {
         xy.setSpeed(data.s_speed);
         upd |= 1;
     }
@@ -49,7 +50,7 @@ void build() {
         if (manual) xy.setTarget(xy.getPos(0), xy.getPos(1));
         locked = 0;
     }
-    
+
     uint16_t sx = xy.getPos(0);
     if (hub.Slider(&sx, GH_UINT16, F("pos x"), 400, 2500)) {
         if (manual) xy.setTarget(hub.action().valueInt(), xy.getPos(1));
@@ -78,7 +79,7 @@ void build() {
     hub.Title(F("Planner"));
     upd |= hub.Slider(&data.px.offset, GH_INT16, F("offset x"), -100, 100);
     upd |= hub.Slider(&data.py.offset, GH_INT16, F("offset y"), -100, 100);
-    
+
     upd |= hub.Input(&data.px.min, GH_UINT16, F("min x"));
     upd |= hub.Input(&data.py.min, GH_UINT16, F("min y"));
     upd |= hub.Input(&data.px.max, GH_UINT16, F("max x"));
@@ -109,7 +110,7 @@ void core0(void *p) {
     fan.write(data.fan_speed);
     xy.setTarget(data.px.home, data.py.home);
 
-    GHtimer searchTmr(1);   // start 1 ms чтобы перейти в search
+    GHtimer searchTmr(1);  // start 1 ms чтобы перейти в search
     GHtimer idleTmr;
 
     for (;;) {
@@ -131,15 +132,17 @@ void core0(void *p) {
                 int16_t dy = -(face.frame_h / 2 - cy);
                 if (data.sx.reverse) dx = -dx;
                 if (data.sy.reverse) dy = -dy;
-                int16_t dxx = dx * data.sx.anlge / data.angle;
-                int16_t dyy = dy * data.sy.anlge / (data.angle * 3 / 4);  // matrix 3:4
+
+                int16_t dxx = dx * (data.sx.max - data.sx.min) * data.angle / face.frame_w / data.sx.anlge;
+                int16_t dyy = dy * (data.sy.max - data.sy.min) * (data.angle * 3 / 4) / face.frame_h / data.sy.anlge;
                 dxx += data.px.offset;
                 dyy += data.py.offset;
-                int16_t tx = constrain(xy.getPos(0) + dxx, data.px.min, data.px.max);
-                int16_t ty = constrain(xy.getPos(1) + dyy, data.py.min, data.py.max);
+                int16_t tx = constrain(bufpos_x + dxx, data.px.min, data.px.max);
+                int16_t ty = constrain(bufpos_y + dyy, data.py.min, data.py.max);
                 if (abs(dx) >= data.min_error || abs(dy) >= data.min_error) xy.setTarget(tx, ty);
                 else xy.stop();
-                xy.setSpeed(map(xy.getTotal(), 500, 50, data.s_speed, 10));
+                xy.setSpeed(map(xy.getTotal(), 500, 50, data.s_speed, 40));
+                // xy.setSpeed(data.s_speed);
 
                 Serial.printf("Locked!\n");
                 Serial.printf("x:%d, w:%d, cx:%d, dx:%d, dxx:%d, tx:%d\n", face.x, face.w, cx, dx, dxx, tx);

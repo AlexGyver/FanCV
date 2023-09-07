@@ -64,6 +64,8 @@ void loop() {
 
     fbj = nullptr;
     fbj = esp_camera_fb_get();
+    bufpos_x = xy.getPos(0);
+    bufpos_y = xy.getPos(1);
 
     if (fbj) {
         uint32_t len = fbj->width * fbj->height * 2;
@@ -78,7 +80,6 @@ void loop() {
                     buf[i] = buf[i + 1];
                     buf[i + 1] = b;
                 }
-
                 face.find(buf, fbj->width, fbj->height);
                 // if (face.found) Serial.printf("%d,%d,%d,%d\n", face.x, face.y, face.w, face.h);
 
