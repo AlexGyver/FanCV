@@ -41,7 +41,7 @@ void loop() {
 
     // camera_fb_t *fbj = esp_camera_fb_get();
     // if (fbj) {
-    //     for (uint32_t i; i < fbj->len; i += 2) {
+    //     for (uint32_t i = 0; i < fbj->len; i += 2) {
     //         uint8_t b = fbj->buf[i];
     //         fbj->buf[i] = fbj->buf[i + 1];
     //         fbj->buf[i + 1] = b;
@@ -75,7 +75,7 @@ void loop() {
             bool ok = jpg2rgb565(fbj->buf, fbj->len, buf, JPG_SCALE_NONE);
             if (ok) {
                 // swap low->high byte
-                for (uint32_t i; i < len; i += 2) {
+                for (uint32_t i = 0; i < len; i += 2) {
                     uint8_t b = buf[i];
                     buf[i] = buf[i + 1];
                     buf[i + 1] = b;
